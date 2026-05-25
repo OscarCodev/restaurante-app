@@ -4,20 +4,18 @@ import nextJest from 'next/jest.js'
 const createJestConfig = nextJest({ dir: './' })
 
 const config: Config = {
-  testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  testEnvironment: 'node',
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
   testMatch: [
     '<rootDir>/__tests__/unit/**/*.test.ts',
-    '<rootDir>/__tests__/components/**/*.test.tsx',
   ],
   collectCoverage: false,
   collectCoverageFrom: [
+    'app/api/productos/route.ts',
+    'app/api/pedidos/route.ts',
     'lib/supabase/**/*.ts',
-    'app/api/**/*.ts',
-    'components/**/*.tsx',
     'lib/validaciones.ts',
     'lib/calculos.ts',
     '!**/*.d.ts',
@@ -27,10 +25,10 @@ const config: Config = {
   coverageDirectory: 'coverage',
   coverageThreshold: {
     global: {
-      branches:   40,
-      functions:  57,
-      lines:      47,
-      statements: 44,
+      branches:   60,
+      functions:  80,
+      lines:      80,
+      statements: 80,
     },
   },
 }

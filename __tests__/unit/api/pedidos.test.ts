@@ -1,11 +1,16 @@
 /**
  * @jest-environment node
  */
-import { POST } from '@/app/api/pedidos/route'
+import { beforeEach, describe, expect, it, jest } from '@jest/globals'
 import { NextRequest } from 'next/server'
 
+const mockSupabase: any = {
+  auth: { getUser: jest.fn() },
+  from: jest.fn(),
+}
+
 jest.mock('@/lib/supabase/server', () => ({
-  createClient: jest.fn(),
+  createClient: jest.fn(() => mockSupabase),
 }))
 
 jest.mock('@/lib/supabase/pedidos', () => ({
@@ -13,31 +18,53 @@ jest.mock('@/lib/supabase/pedidos', () => ({
   getPedidos: jest.fn(),
 }))
 
-import { createClient } from '@/lib/supabase/server'
-import { crearPedido } from '@/lib/supabase/pedidos'
+const { GET, POST } = require('@/app/api/pedidos/route') as typeof import('@/app/api/pedidos/route')
+const { createClient } = require('@/lib/supabase/server') as typeof import('@/lib/supabase/server')
+const { crearPedido, getPedidos } = require('@/lib/supabase/pedidos') as typeof import('@/lib/supabase/pedidos')
 
 const VALID_UUID = '6ba7b810-9dad-11d1-80b4-00c04fd430c8'
 
-function makeBuilder(resolvedValue: unknown) {
-  const builder: Record<string, jest.Mock> = {}
+function makeBuilder(resolvedValue: any): any {
+  const builder: any = {}
   builder.select = jest.fn().mockReturnValue(builder)
   builder.eq = jest.fn().mockReturnValue(builder)
-  builder.single = jest.fn().mockResolvedValue(resolvedValue)
+  builder.single = jest.fn(() => Promise.resolve(resolvedValue))
   return builder
-}
-
-const mockSupabase = {
-  auth: { getUser: jest.fn() },
-  from: jest.fn(),
 }
 
 beforeEach(() => {
   jest.clearAllMocks()
-  ;(createClient as jest.Mock).mockResolvedValue(mockSupabase)
+})
+
+const mockedGetPedidos = getPedidos as any
+const mockedCrearPedido = crearPedido as any
+
+describe('GET /api/pedidos', () => {
+  it('devuelve 401 si no hay sesión activa', async () => {
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
+
+    const request = new NextRequest('http://localhost/api/pedidos')
+    const response = await GET(request)
+
+    expect(response.status).toBe(401)
+  })
+
+  it('devuelve pedidos cuando el usuario está autenticado', async () => {
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'uuid-user' } } })
+    mockSupabase.from.mockReturnValue(makeBuilder({ data: { rol: 'mesero' }, error: null }))
+
+    const pedidos = [{ id: 'pedido-1', estado: 'abierto', total: 25 }]
+    mockedGetPedidos.mockResolvedValue(pedidos)
+
+    const request = new NextRequest('http://localhost/api/pedidos?estado=abierto')
+    const response = await GET(request)
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual(pedidos)
+  })
 })
 
 describe('POST /api/pedidos', () => {
-
   it('devuelve 401 si no hay sesión activa', async () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
 
@@ -51,9 +78,7 @@ describe('POST /api/pedidos', () => {
   })
 
   it('devuelve 400 si faltan campos requeridos', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: { id: 'uuid-user' } },
-    })
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'uuid-user' } } })
 
     const request = new NextRequest('http://localhost/api/pedidos', {
       method: 'POST',
@@ -65,10 +90,7 @@ describe('POST /api/pedidos', () => {
   })
 
   it('devuelve 409 si la mesa está ocupada', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: { id: 'uuid-user' } },
-    })
-
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'uuid-user' } } })
     mockSupabase.from.mockReturnValue(
       makeBuilder({ data: { id: VALID_UUID, estado: 'ocupada', capacidad: 4 }, error: null })
     )
@@ -85,19 +107,20 @@ describe('POST /api/pedidos', () => {
   })
 
   it('crea el pedido y devuelve 201 si la mesa está libre', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: { id: 'uuid-user' } },
-    })
-
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'uuid-user' } } })
     mockSupabase.from.mockReturnValue(
       makeBuilder({ data: { id: VALID_UUID, estado: 'libre', capacidad: 4 }, error: null })
     )
 
     const pedidoCreado = {
-      id: 'uuid-pedido', mesa_id: VALID_UUID, usuario_id: 'uuid-user',
-      estado: 'abierto', total: 0, comensales: 2,
+      id: 'uuid-pedido',
+      mesa_id: VALID_UUID,
+      usuario_id: 'uuid-user',
+      estado: 'abierto',
+      total: 0,
+      comensales: 2,
     }
-    ;(crearPedido as jest.Mock).mockResolvedValue(pedidoCreado)
+    mockedCrearPedido.mockResolvedValue(pedidoCreado)
 
     const request = new NextRequest('http://localhost/api/pedidos', {
       method: 'POST',
@@ -109,15 +132,5 @@ describe('POST /api/pedidos', () => {
     const body = await response.json()
     expect(body.estado).toBe('abierto')
     expect(body.total).toBe(0)
-  })
-})
-
-describe('PUT /api/pedidos/[id]/cerrar', () => {
-  it('devuelve 400 si el pedido no tiene ítems', async () => {
-    // placeholder — implementar con mock de detalle_pedido vacío
-  })
-
-  it('devuelve 409 si el pedido ya está cerrado', async () => {
-    // placeholder — implementar con mock de pedido con estado = 'cerrado'
   })
 })
