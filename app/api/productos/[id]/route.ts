@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { editarProducto } from '@/lib/supabase/productos'
+import { getAuthUser } from '@/infrastructure/auth/getCurrentUser'
+import { createContainer } from '@/container'
+import { mapDomainError } from '@/lib/http/mapError'
 
 export async function PATCH(request: NextRequest, ctx: RouteContext<'/api/productos/[id]'>) {
   try {
     const { id } = await ctx.params
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getAuthUser()
     if (!user) return NextResponse.json({ error: 'No autenticado', code: 'UNAUTHORIZED' }, { status: 401 })
-
-    const { data: perfil } = await supabase.from('perfiles').select('rol').eq('id', user.id).single()
-    if (perfil?.rol !== 'admin') return NextResponse.json({ error: 'Sin permisos', code: 'FORBIDDEN' }, { status: 403 })
+    if (user.rol !== 'admin') return NextResponse.json({ error: 'Sin permisos', code: 'FORBIDDEN' }, { status: 403 })
 
     const body = await request.json()
-    const producto = await editarProducto(id, body)
+    const producto = await createContainer().editarProducto.execute(id, body)
     return NextResponse.json(producto)
-  } catch {
-    return NextResponse.json({ error: 'Error interno', code: 'INTERNAL_ERROR' }, { status: 500 })
+  } catch (err) {
+    return mapDomainError(err)
   }
 }

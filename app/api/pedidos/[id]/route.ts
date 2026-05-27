@@ -1,24 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getPedidoConDetalle } from '@/lib/supabase/pedidos'
+import { getAuthUser } from '@/infrastructure/auth/getCurrentUser'
+import { createContainer } from '@/container'
+import { mapDomainError } from '@/lib/http/mapError'
 
 export async function GET(_req: NextRequest, ctx: RouteContext<'/api/pedidos/[id]'>) {
   try {
     const { id } = await ctx.params
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getAuthUser()
     if (!user) return NextResponse.json({ error: 'No autenticado', code: 'UNAUTHORIZED' }, { status: 401 })
 
-    const pedido = await getPedidoConDetalle(id)
+    const pedido = await createContainer().getPedidoConDetalle.execute(id)
     if (!pedido) return NextResponse.json({ error: 'Pedido no encontrado', code: 'NOT_FOUND' }, { status: 404 })
 
-    const { data: perfil } = await supabase.from('perfiles').select('rol').eq('id', user.id).single()
-    if (perfil?.rol !== 'admin' && pedido.usuario_id !== user.id) {
+    if (user.rol !== 'admin' && pedido.usuario_id !== user.id) {
       return NextResponse.json({ error: 'Sin permisos', code: 'FORBIDDEN' }, { status: 403 })
     }
 
     return NextResponse.json(pedido)
-  } catch {
-    return NextResponse.json({ error: 'Error interno', code: 'INTERNAL_ERROR' }, { status: 500 })
+  } catch (err) {
+    return mapDomainError(err)
+  }
+}
+
+/** DELETE /api/pedidos/[id]  — cancela un pedido vacío (sin ítems) */
+export async function DELETE(_req: NextRequest, ctx: RouteContext<'/api/pedidos/[id]'>) {
+  try {
+    const { id } = await ctx.params
+    const user = await getAuthUser()
+    if (!user) return NextResponse.json({ error: 'No autenticado', code: 'UNAUTHORIZED' }, { status: 401 })
+
+    await createContainer().cancelarPedido.execute(id, user.id, user.rol === 'admin')
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    return mapDomainError(err)
   }
 }

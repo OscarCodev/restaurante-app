@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
-import type { Producto, Categoria } from '@/types/database'
+import type { Producto } from '@/domain/entities/Producto'
+import type { Categoria } from '@/domain/entities/Producto'
 
 interface ProductoFormProps {
   producto?: Producto
@@ -60,7 +61,7 @@ export default function ProductoForm({ producto, onSuccess, onCancel }: Producto
           value={nombre}
           onChange={e => setNombre(e.target.value)}
           required
-          className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+          className="w-full border rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400"
         />
       </div>
       <div>
@@ -68,7 +69,7 @@ export default function ProductoForm({ producto, onSuccess, onCancel }: Producto
         <input
           value={descripcion}
           onChange={e => setDescripcion(e.target.value)}
-          className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+          className="w-full border rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400"
         />
       </div>
       <div>
@@ -80,7 +81,7 @@ export default function ProductoForm({ producto, onSuccess, onCancel }: Producto
           value={precio}
           onChange={e => setPrecio(e.target.value)}
           required
-          className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+          className="w-full border rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400"
         />
       </div>
       <div>
@@ -88,7 +89,7 @@ export default function ProductoForm({ producto, onSuccess, onCancel }: Producto
         <select
           value={categoria}
           onChange={e => setCategoria(e.target.value as Categoria)}
-          className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+          className="w-full border rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400"
         >
           {CATEGORIAS.map(c => (
             <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>

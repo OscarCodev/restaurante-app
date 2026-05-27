@@ -13,11 +13,19 @@ const config: Config = {
   ],
   collectCoverage: false,
   collectCoverageFrom: [
-    'app/api/productos/route.ts',
-    'app/api/pedidos/route.ts',
-    'lib/supabase/**/*.ts',
+    // ── Capas testeables con unit tests ──────────────────────────────────────
+    'domain/**/*.ts',
+    'application/**/*.ts',
+    'lib/http/**/*.ts',
     'lib/validaciones.ts',
     'lib/calculos.ts',
+    'app/api/**/*.ts',
+    // ── Excluidos de umbrales globales ──────────────────────────────────────────
+    // infrastructure/**: dependen de Supabase real → integration tests
+    // auth/login y auth/logout: infraestructura de identidad (no dominio de negocio)
+    '!infrastructure/**/*.ts',
+    '!container/**/*.ts',
+    '!app/api/auth/**/*.ts',
     '!**/*.d.ts',
     '!**/node_modules/**',
   ],

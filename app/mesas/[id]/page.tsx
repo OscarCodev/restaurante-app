@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/infrastructure/supabase/client'
 import { PedidoDetalle } from '@/components/pedidos/PedidoDetalle'
 import AgregarItemForm from '@/components/pedidos/AgregarItemForm'
 import CobrarModal from '@/components/pedidos/CobrarModal'
@@ -49,6 +49,7 @@ export default function DetallePedidoPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [cobrando, setCobrando] = useState(false)
+  const [cancelando, setCancelando] = useState(false)
   const [tabMovil, setTabMovil] = useState<'pedido' | 'carta'>('pedido')
 
   const tiempo = useTimer(pedido?.fecha_apertura)
@@ -97,6 +98,24 @@ export default function DetallePedidoPage() {
       })
     }
   }, [id, cargarPedido])
+
+  async function handleCancelar() {
+    if (!confirm('¿Cancelar este pedido vacío y liberar la mesa?')) return
+    setCancelando(true)
+    try {
+      const res = await fetch(`/api/pedidos/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        window.location.href = '/mesas'
+      } else {
+        const body = await res.json().catch(() => ({}))
+        setError(body.error ?? 'Error al cancelar el pedido')
+      }
+    } catch {
+      setError('Error de conexión')
+    } finally {
+      setCancelando(false)
+    }
+  }
 
   async function handleEliminar(itemId: string) {
     await fetch(`/api/pedidos/${id}/items/${itemId}`, { method: 'DELETE' })
@@ -153,6 +172,15 @@ export default function DetallePedidoPage() {
           <span className="text-xs text-slate-400 shrink-0">
             Abierto hace <span className="font-mono font-semibold text-slate-600">{tiempo}</span>
           </span>
+        )}
+        {pedido.estado === 'abierto' && pedido.items.length === 0 && (
+          <button
+            onClick={handleCancelar}
+            disabled={cancelando}
+            className="text-xs text-red-500 hover:text-red-700 font-medium shrink-0 disabled:opacity-50"
+          >
+            {cancelando ? 'Cancelando…' : 'Cancelar mesa'}
+          </button>
         )}
       </header>
 

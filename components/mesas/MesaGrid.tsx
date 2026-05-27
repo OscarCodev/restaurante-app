@@ -1,10 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/infrastructure/supabase/client'
 import { MesaCard, type MesaConPedido } from './MesaCard'
 import AbrirPedidoModal from './AbrirPedidoModal'
-import type { Mesa } from '@/types/database'
+import type { Mesa } from '@/domain/entities/Mesa'
 
 interface MesaGridProps {
   initialMesas: MesaConPedido[]
@@ -77,9 +77,10 @@ export default function MesaGrid({ initialMesas }: MesaGridProps) {
   }, [])
 
   function handleMesaClick(mesa: MesaConPedido) {
-    if (mesa.estado === 'ocupada' && mesa.pedido_activo_id) {
-      // Navegación completa para evitar que el router cache muestre
-      // una versión vieja del pedido sin los ítems ya agregados
+    if (mesa.pedido_activo_id) {
+      // Si hay un pedido activo (sea cual sea mesas.estado), navegar al pedido.
+      // Esto también cubre inconsistencias donde mesas.estado='libre' pero
+      // existe un pedido abierto en la BD (datos sucios de desarrollo, etc.).
       window.location.href = `/mesas/${mesa.pedido_activo_id}`
     } else if (mesa.estado === 'libre') {
       setMesaSeleccionada(mesa)

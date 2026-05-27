@@ -1,29 +1,13 @@
-import { createClient } from '@/lib/supabase/server'
-import MesaGrid from '@/components/mesas/MesaGrid'
 import { redirect } from 'next/navigation'
+import { getAuthUser } from '@/infrastructure/auth/getCurrentUser'
+import { createContainer } from '@/container'
+import MesaGrid from '@/components/mesas/MesaGrid'
 
 export default async function MesasPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
 
-  const { data: mesas } = await supabase.from('mesas').select('*').order('numero')
-  const { data: pedidosAbiertos } = await supabase
-    .from('pedidos')
-    .select('id, mesa_id, fecha_apertura')
-    .eq('estado', 'abierto')
-    .order('fecha_apertura', { ascending: false })
-
-  const mesasConPedido = (mesas ?? []).map(mesa => {
-    const pedido = pedidosAbiertos?.find(p => p.mesa_id === mesa.id)
-    return {
-      ...mesa,
-      pedido_activo_id: pedido?.id ?? null,
-      fecha_apertura_pedido: pedido?.fecha_apertura ?? null,
-    }
-  })
-
-  const { data: perfil } = await supabase.from('perfiles').select('nombre, rol').eq('id', user.id).single()
+  const mesas = await createContainer().getMesasConEstado.execute()
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -31,7 +15,7 @@ export default async function MesasPage() {
         <h1 className="text-lg font-bold text-slate-900">Vista de planta</h1>
 
         <div className="flex items-center gap-3">
-          {perfil?.rol === 'admin' && (
+          {user.rol === 'admin' && (
             <details className="relative">
               <summary className="list-none cursor-pointer select-none flex items-center gap-1 text-sm font-medium text-slate-700 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">
                 Admin
@@ -51,7 +35,7 @@ export default async function MesasPage() {
             </details>
           )}
 
-          <span className="text-sm text-slate-500 hidden sm:block">{perfil?.nombre}</span>
+          <span className="text-sm text-slate-500 hidden sm:block">{user.nombre}</span>
 
           <form action="/api/auth/logout" method="POST">
             <button
@@ -65,7 +49,7 @@ export default async function MesasPage() {
       </header>
 
       <main className="p-6">
-        <MesaGrid initialMesas={mesasConPedido} />
+        <MesaGrid initialMesas={mesas} />
       </main>
     </div>
   )

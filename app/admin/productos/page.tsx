@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import type { Producto } from '@/types/database'
+import type { Producto } from '@/domain/entities/Producto'
 import ProductoForm from '@/components/admin/ProductoForm'
 import Drawer from '@/components/ui/Drawer'
 import Badge from '@/components/ui/Badge'

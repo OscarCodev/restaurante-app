@@ -1,136 +1,183 @@
 /**
- * @jest-environment node
+ * Tests de HTTP adapters — API Pedidos
+ *
+ * GET  /api/pedidos     → 401 sin auth, 200 con lista
+ * POST /api/pedidos     → 401, 400 validación, 201 creado, 409 mesa ocupada
+ *
+ * NOTA: Zod v4 valida UUID estricto RFC 4122 (version bits [1-8], variant [89abAB]).
+ *       Usamos 550e8400-e29b-41d4-a716-446655440000 como UUID de prueba.
  */
-import { beforeEach, describe, expect, it, jest } from '@jest/globals'
+
 import { NextRequest } from 'next/server'
+import { GET, POST } from '@/app/api/pedidos/route'
+import { ConflictError, NotFoundError, ValidationError } from '@/domain/errors/DomainErrors'
+import type { Pedido, PedidoConMesa } from '@/domain/entities/Pedido'
 
-const mockSupabase: any = {
-  auth: { getUser: jest.fn() },
-  from: jest.fn(),
+// ── Mocks ─────────────────────────────────────────────────────────────────────
+
+jest.mock('@/infrastructure/auth/getCurrentUser')
+jest.mock('@/container')
+
+import { getAuthUser }     from '@/infrastructure/auth/getCurrentUser'
+import { createContainer } from '@/container'
+
+const mockGetAuthUser     = getAuthUser as jest.MockedFunction<typeof getAuthUser>
+const mockCreateContainer = createContainer as jest.MockedFunction<typeof createContainer>
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+const userMesero = { id: 'user-1', rol: 'mesero' as const, nombre: 'Juan' }
+const userAdmin  = { id: 'user-2', rol: 'admin'  as const, nombre: 'Admin' }
+
+// UUID v4 válido (version bit=4, variant bit=a) — requerido por Zod v4
+const MESA_UUID = '550e8400-e29b-41d4-a716-446655440000'
+
+const pedidoEjemplo: Pedido = {
+  id: 'pedido-1', mesa_id: 'mesa-1', usuario_id: 'user-1',
+  estado: 'abierto', total: 0, comensales: 2,
+  fecha_apertura: '2026-05-27T10:00:00Z', fecha_cierre: null,
+  created_at: '2026-05-27T10:00:00Z',
 }
 
-jest.mock('@/lib/supabase/server', () => ({
-  createClient: jest.fn(() => mockSupabase),
-}))
+const pedidoConMesa: PedidoConMesa = { ...pedidoEjemplo, mesa: { id: 'mesa-1', numero: 1 } }
 
-jest.mock('@/lib/supabase/pedidos', () => ({
-  crearPedido: jest.fn(),
-  getPedidos: jest.fn(),
-}))
-
-const { GET, POST } = require('@/app/api/pedidos/route') as typeof import('@/app/api/pedidos/route')
-const { createClient } = require('@/lib/supabase/server') as typeof import('@/lib/supabase/server')
-const { crearPedido, getPedidos } = require('@/lib/supabase/pedidos') as typeof import('@/lib/supabase/pedidos')
-
-const VALID_UUID = '6ba7b810-9dad-11d1-80b4-00c04fd430c8'
-
-function makeBuilder(resolvedValue: any): any {
-  const builder: any = {}
-  builder.select = jest.fn().mockReturnValue(builder)
-  builder.eq = jest.fn().mockReturnValue(builder)
-  builder.single = jest.fn(() => Promise.resolve(resolvedValue))
-  return builder
+function makeRequest(url: string, method: string, body?: unknown): NextRequest {
+  return {
+    method,
+    json: jest.fn().mockResolvedValue(body ?? {}),
+    nextUrl: new URL(url),
+    headers: new Headers({ 'Content-Type': 'application/json' }),
+  } as unknown as NextRequest
 }
 
-beforeEach(() => {
-  jest.clearAllMocks()
-})
+function mockContainer(overrides: Record<string, unknown> = {}) {
+  mockCreateContainer.mockReturnValue({
+    getPedidos:   { execute: jest.fn().mockResolvedValue([pedidoConMesa]) },
+    crearPedido:  { execute: jest.fn().mockResolvedValue(pedidoEjemplo) },
+    ...overrides,
+  } as unknown as ReturnType<typeof createContainer>)
+}
 
-const mockedGetPedidos = getPedidos as any
-const mockedCrearPedido = crearPedido as any
+beforeEach(() => jest.clearAllMocks())
+
+// ── GET /api/pedidos ───────────────────────────────────────────────────────────
 
 describe('GET /api/pedidos', () => {
-  it('devuelve 401 si no hay sesión activa', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
+  it('devuelve 401 si no está autenticado', async () => {
+    mockGetAuthUser.mockResolvedValue(null)
+    mockContainer()
 
-    const request = new NextRequest('http://localhost/api/pedidos')
-    const response = await GET(request)
-
-    expect(response.status).toBe(401)
+    const req = makeRequest('http://localhost/api/pedidos', 'GET')
+    const res = await GET(req)
+    expect(res.status).toBe(401)
   })
 
-  it('devuelve pedidos cuando el usuario está autenticado', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'uuid-user' } } })
-    mockSupabase.from.mockReturnValue(makeBuilder({ data: { rol: 'mesero' }, error: null }))
+  it('devuelve 200 con la lista de pedidos', async () => {
+    mockGetAuthUser.mockResolvedValue(userMesero)
+    mockContainer({ getPedidos: { execute: jest.fn().mockResolvedValue([pedidoConMesa]) } })
 
-    const pedidos = [{ id: 'pedido-1', estado: 'abierto', total: 25 }]
-    mockedGetPedidos.mockResolvedValue(pedidos)
+    const req = makeRequest('http://localhost/api/pedidos', 'GET')
+    const res = await GET(req)
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toHaveLength(1)
+  })
 
-    const request = new NextRequest('http://localhost/api/pedidos?estado=abierto')
-    const response = await GET(request)
+  it('pasa userId y esAdmin=false cuando el usuario es mesero', async () => {
+    mockGetAuthUser.mockResolvedValue(userMesero)
+    const executeMock = jest.fn().mockResolvedValue([])
+    mockContainer({ getPedidos: { execute: executeMock } })
 
-    expect(response.status).toBe(200)
-    expect(await response.json()).toEqual(pedidos)
+    const req = makeRequest('http://localhost/api/pedidos', 'GET')
+    await GET(req)
+
+    expect(executeMock).toHaveBeenCalledWith(
+      expect.objectContaining({ usuarioId: 'user-1', esAdmin: false })
+    )
+  })
+
+  it('pasa esAdmin=true cuando el usuario es admin', async () => {
+    mockGetAuthUser.mockResolvedValue(userAdmin)
+    const executeMock = jest.fn().mockResolvedValue([])
+    mockContainer({ getPedidos: { execute: executeMock } })
+
+    const req = makeRequest('http://localhost/api/pedidos', 'GET')
+    await GET(req)
+
+    expect(executeMock).toHaveBeenCalledWith(
+      expect.objectContaining({ esAdmin: true })
+    )
   })
 })
 
+// ── POST /api/pedidos ─────────────────────────────────────────────────────────
+
 describe('POST /api/pedidos', () => {
-  it('devuelve 401 si no hay sesión activa', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
+  it('devuelve 401 si no está autenticado', async () => {
+    mockGetAuthUser.mockResolvedValue(null)
+    mockContainer()
 
-    const request = new NextRequest('http://localhost/api/pedidos', {
-      method: 'POST',
-      body: JSON.stringify({ mesa_id: VALID_UUID, comensales: 2 }),
-    })
-
-    const response = await POST(request)
-    expect(response.status).toBe(401)
+    const req = makeRequest('http://localhost/api/pedidos', 'POST', { mesa_id: MESA_UUID, comensales: 2 })
+    const res = await POST(req)
+    expect(res.status).toBe(401)
   })
 
-  it('devuelve 400 si faltan campos requeridos', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'uuid-user' } } })
+  it('devuelve 400 si el body no pasa la validación Zod (mesa_id inválido)', async () => {
+    mockGetAuthUser.mockResolvedValue(userMesero)
+    mockContainer()
 
-    const request = new NextRequest('http://localhost/api/pedidos', {
-      method: 'POST',
-      body: JSON.stringify({ comensales: 2 }),
-    })
-
-    const response = await POST(request)
-    expect(response.status).toBe(400)
+    const req = makeRequest('http://localhost/api/pedidos', 'POST', { mesa_id: 'no-es-uuid', comensales: 0 })
+    const res = await POST(req)
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.code).toBe('VALIDATION_ERROR')
   })
 
-  it('devuelve 409 si la mesa está ocupada', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'uuid-user' } } })
-    mockSupabase.from.mockReturnValue(
-      makeBuilder({ data: { id: VALID_UUID, estado: 'ocupada', capacidad: 4 }, error: null })
-    )
+  it('devuelve 201 con el pedido creado', async () => {
+    mockGetAuthUser.mockResolvedValue(userMesero)
+    mockContainer({ crearPedido: { execute: jest.fn().mockResolvedValue(pedidoEjemplo) } })
 
-    const request = new NextRequest('http://localhost/api/pedidos', {
-      method: 'POST',
-      body: JSON.stringify({ mesa_id: VALID_UUID, comensales: 2 }),
+    const req = makeRequest('http://localhost/api/pedidos', 'POST', { mesa_id: MESA_UUID, comensales: 2 })
+    const res = await POST(req)
+    expect(res.status).toBe(201)
+    const body = await res.json()
+    expect(body.id).toBe('pedido-1')
+  })
+
+  it('devuelve 409 MESA_OCUPADA si la mesa ya está ocupada', async () => {
+    mockGetAuthUser.mockResolvedValue(userMesero)
+    mockContainer({
+      crearPedido: { execute: jest.fn().mockRejectedValue(new ConflictError('MESA_OCUPADA', 'La mesa ya está ocupada')) },
     })
 
-    const response = await POST(request)
-    expect(response.status).toBe(409)
-    const body = await response.json()
+    const req = makeRequest('http://localhost/api/pedidos', 'POST', { mesa_id: MESA_UUID, comensales: 2 })
+    const res = await POST(req)
+    expect(res.status).toBe(409)
+    const body = await res.json()
     expect(body.code).toBe('MESA_OCUPADA')
   })
 
-  it('crea el pedido y devuelve 201 si la mesa está libre', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'uuid-user' } } })
-    mockSupabase.from.mockReturnValue(
-      makeBuilder({ data: { id: VALID_UUID, estado: 'libre', capacidad: 4 }, error: null })
-    )
-
-    const pedidoCreado = {
-      id: 'uuid-pedido',
-      mesa_id: VALID_UUID,
-      usuario_id: 'uuid-user',
-      estado: 'abierto',
-      total: 0,
-      comensales: 2,
-    }
-    mockedCrearPedido.mockResolvedValue(pedidoCreado)
-
-    const request = new NextRequest('http://localhost/api/pedidos', {
-      method: 'POST',
-      body: JSON.stringify({ mesa_id: VALID_UUID, comensales: 2 }),
+  it('devuelve 404 si la mesa no existe', async () => {
+    mockGetAuthUser.mockResolvedValue(userMesero)
+    mockContainer({
+      crearPedido: { execute: jest.fn().mockRejectedValue(new NotFoundError('Mesa no encontrada')) },
     })
 
-    const response = await POST(request)
-    expect(response.status).toBe(201)
-    const body = await response.json()
-    expect(body.estado).toBe('abierto')
-    expect(body.total).toBe(0)
+    const req = makeRequest('http://localhost/api/pedidos', 'POST', { mesa_id: MESA_UUID, comensales: 2 })
+    const res = await POST(req)
+    expect(res.status).toBe(404)
+  })
+
+  it('devuelve 400 si los comensales superan la capacidad (ValidationError del caso de uso)', async () => {
+    mockGetAuthUser.mockResolvedValue(userMesero)
+    mockContainer({
+      crearPedido: { execute: jest.fn().mockRejectedValue(new ValidationError('Supera la capacidad de la mesa')) },
+    })
+
+    const req = makeRequest('http://localhost/api/pedidos', 'POST', { mesa_id: MESA_UUID, comensales: 99 })
+    const res = await POST(req)
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.code).toBe('VALIDATION_ERROR')
   })
 })

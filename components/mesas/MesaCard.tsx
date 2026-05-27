@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import type { Mesa } from '@/types/database'
+import type { Mesa } from '@/domain/entities/Mesa'
 
 export type MesaConPedido = Mesa & {
   pedido_activo_id?: string | null
@@ -33,7 +33,9 @@ function useTimer(fechaApertura: string | null | undefined): string {
 }
 
 export function MesaCard({ mesa, onClick }: MesaCardProps) {
-  const libre = mesa.estado === 'libre'
+  // Una mesa es libre SOLO si su estado es 'libre' Y no tiene pedido activo.
+  // Si hay pedido_activo_id (aunque mesas.estado diga 'libre'), está ocupada.
+  const libre = mesa.estado === 'libre' && !mesa.pedido_activo_id
   const tiempo = useTimer(libre ? null : mesa.fecha_apertura_pedido)
 
   const ms = !libre && mesa.fecha_apertura_pedido

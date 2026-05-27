@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Mesa } from '@/types/database'
+import type { Mesa } from '@/domain/entities/Mesa'
 
 interface AbrirPedidoModalProps {
   mesa: Mesa

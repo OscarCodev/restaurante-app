@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import type { Mesa } from '@/types/database'
+import type { Mesa } from '@/domain/entities/Mesa'
 
 export default function AdminMesasPage() {
   const [mesas, setMesas] = useState<Mesa[]>([])
@@ -62,7 +62,7 @@ export default function AdminMesasPage() {
               value={numero}
               onChange={e => setNumero(e.target.value)}
               required
-              className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 w-24"
+              className="border rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 w-24"
             />
           </div>
           <div>
@@ -73,7 +73,7 @@ export default function AdminMesasPage() {
               value={capacidad}
               onChange={e => setCapacidad(e.target.value)}
               required
-              className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 w-24"
+              className="border rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 w-24"
             />
           </div>
           <button
@@ -110,7 +110,7 @@ export default function AdminMesasPage() {
                         min="1"
                         value={editando.capacidad}
                         onChange={e => setEditando({ ...editando, capacidad: e.target.value })}
-                        className="border rounded px-2 py-1 text-sm w-20 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                        className="border rounded px-2 py-1 text-sm text-slate-900 w-20 focus:outline-none focus:ring-1 focus:ring-slate-400"
                       />
                     ) : (
                       `${m.capacidad} personas`

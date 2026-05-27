@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
-import type { Producto, Categoria } from '@/types/database'
+import type { Producto } from '@/domain/entities/Producto'
+import type { Categoria } from '@/domain/entities/Producto'
 
 const CATEGORIAS: { value: Categoria | 'todos'; label: string }[] = [
   { value: 'todos', label: 'Todos' },
