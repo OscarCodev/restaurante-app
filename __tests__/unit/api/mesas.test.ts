@@ -81,11 +81,14 @@ describe('GET /api/mesas', () => {
   })
 
   it('devuelve 500 si el caso de uso lanza un error inesperado', async () => {
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {})
     mockGetAuthUser.mockResolvedValue(userMesero)
     mockContainer({ getMesasConEstado: { execute: jest.fn().mockRejectedValue(new Error('DB error')) } })
 
     const res = await GET()
     expect(res.status).toBe(500)
+    expect(spy).toHaveBeenCalledWith('[API Error]', expect.any(Error))
+    spy.mockRestore()
   })
 })
 

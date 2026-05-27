@@ -6,6 +6,8 @@
 **Fecha:** Mayo 2026
 
 ---
+npm test
+npm run test:coverage
 
 ## Visión general
 
