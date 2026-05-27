@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/infrastructure/auth/getCurrentUser'
 import { createContainer } from '@/container'
 import { mapDomainError } from '@/lib/http/mapError'
-import { createClient } from '@/infrastructure/supabase/server'
+import { createAdminClient } from '@/infrastructure/supabase/admin'
 
 async function verificarAcceso(pedidoId: string, userId: string, esAdmin: boolean) {
-  const supabase = await createClient()
+  const supabase = await createAdminClient()
   const { data: pedido } = await supabase
     .from('pedidos')
     .select('estado, usuario_id')

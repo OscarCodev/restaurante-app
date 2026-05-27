@@ -3,7 +3,7 @@ import { getAuthUser } from '@/infrastructure/auth/getCurrentUser'
 import { createContainer } from '@/container'
 import { mapDomainError } from '@/lib/http/mapError'
 import { itemSchema } from '@/lib/validaciones'
-import { createClient } from '@/infrastructure/supabase/server'
+import { createAdminClient } from '@/infrastructure/supabase/admin'
 
 export async function POST(request: NextRequest, ctx: RouteContext<'/api/pedidos/[id]/items'>) {
   try {
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<'/api/pedidos
     if (!user) return NextResponse.json({ error: 'No autenticado', code: 'UNAUTHORIZED' }, { status: 401 })
 
     // Verificar pedido abierto y autorización
-    const supabase = await createClient()
+    const supabase = await createAdminClient()
     const { data: pedido } = await supabase
       .from('pedidos')
       .select('estado, usuario_id')

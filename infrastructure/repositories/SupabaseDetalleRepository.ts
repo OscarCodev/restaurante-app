@@ -1,4 +1,4 @@
-import { createClient } from '@/infrastructure/supabase/server'
+import { createAdminClient } from '@/infrastructure/supabase/admin'
 import type { IDetalleRepository } from '@/domain/repositories/IDetalleRepository'
 import type { DetallePedido } from '@/domain/entities/DetallePedido'
 
@@ -9,7 +9,7 @@ export class SupabaseDetalleRepository implements IDetalleRepository {
     cantidad: number,
     precio: number,
   ): Promise<DetallePedido> {
-    const supabase = await createClient()
+    const supabase = await createAdminClient()
 
     // Si el producto ya está en el pedido, incrementa la cantidad
     const { data: existente } = await supabase
@@ -51,7 +51,7 @@ export class SupabaseDetalleRepository implements IDetalleRepository {
   }
 
   async update(id: string, cantidad: number): Promise<DetallePedido> {
-    const supabase = await createClient()
+    const supabase = await createAdminClient()
 
     const { data: item } = await supabase
       .from('detalle_pedido')
@@ -71,7 +71,7 @@ export class SupabaseDetalleRepository implements IDetalleRepository {
   }
 
   async delete(id: string): Promise<void> {
-    const supabase = await createClient()
+    const supabase = await createAdminClient()
     const { error } = await supabase
       .from('detalle_pedido')
       .delete()
@@ -80,7 +80,7 @@ export class SupabaseDetalleRepository implements IDetalleRepository {
   }
 
   async countByPedido(pedidoId: string): Promise<number> {
-    const supabase = await createClient()
+    const supabase = await createAdminClient()
     const { count, error } = await supabase
       .from('detalle_pedido')
       .select('id', { count: 'exact', head: true })
