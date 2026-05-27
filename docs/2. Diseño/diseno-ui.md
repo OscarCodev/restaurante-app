@@ -1,7 +1,7 @@
 # Diseño de UI — Sistema de restaurante
 
 **Proyecto:** Sistema de pedidos de restaurante  
-**Stack:** Next.js 14 + Tailwind CSS  
+**Stack:** Next.js 16 + Tailwind CSS v4  
 **Versión:** 1.0  
 **Fecha:** Mayo 2026
 

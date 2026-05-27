@@ -1,7 +1,7 @@
 # Diseño de API — Sistema de restaurante
 
 **Proyecto:** Sistema de pedidos de restaurante  
-**Stack:** Next.js 14 API Routes + Supabase  
+**Stack:** Next.js 16 API Routes + Supabase  
 **Versión:** 1.0  
 **Fecha:** Mayo 2026
 

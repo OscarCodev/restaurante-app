@@ -1,7 +1,7 @@
 # Modelo de datos — Sistema de restaurante
 
 **Proyecto:** Sistema de pedidos de restaurante  
-**Stack:** Next.js + Supabase (PostgreSQL)  
+**Stack:** Next.js 16 + Supabase (PostgreSQL)  
 **Versión:** 1.0  
 **Fecha:** Mayo 2026
 
