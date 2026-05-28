@@ -1,5 +1,6 @@
 import { createClient } from '@/infrastructure/supabase/server'
 import { redirect } from 'next/navigation'
+import { AdminNav } from '@/components/admin/AdminNav'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -11,23 +12,28 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <a href="/mesas" className="text-slate-500 hover:text-slate-900 text-sm">← Planta</a>
-          <nav className="flex gap-4 text-sm font-medium">
-            <a href="/admin/productos" className="text-slate-600 hover:text-slate-900">Productos</a>
-            <a href="/admin/mesas" className="text-slate-600 hover:text-slate-900">Mesas</a>
-            <a href="/admin/historial" className="text-slate-600 hover:text-slate-900">Historial</a>
-          </nav>
+      <header className="bg-white border-b border-slate-200 px-5 py-3.5 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+        <div className="flex items-center gap-5">
+          <a href="/mesas" className="flex items-center gap-2 text-slate-500 hover:text-slate-900 text-sm font-medium transition-colors">
+            <span>←</span>
+            <span className="hidden sm:inline">Planta</span>
+          </a>
+          <div className="h-4 w-px bg-slate-200" />
+          <AdminNav />
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-slate-500">{perfil?.nombre} (admin)</span>
+          <span className="text-sm text-slate-400 hidden sm:block">{perfil?.nombre}</span>
           <form action="/api/auth/logout" method="POST">
-            <button type="submit" className="text-sm text-red-600 hover:text-red-800">Salir</button>
+            <button
+              type="submit"
+              className="text-sm font-medium text-red-600 hover:text-red-800 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+            >
+              Salir
+            </button>
           </form>
         </div>
       </header>
-      <main className="p-6 max-w-6xl mx-auto">{children}</main>
+      <main className="p-5 lg:p-6 max-w-6xl mx-auto">{children}</main>
     </div>
   )
 }

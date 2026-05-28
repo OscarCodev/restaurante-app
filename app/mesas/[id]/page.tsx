@@ -134,19 +134,27 @@ export default function DetallePedidoPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
-        <p className="text-slate-400 text-sm">Cargando pedido...</p>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <span className="w-8 h-8 border-2 border-slate-200 border-t-slate-600 rounded-full animate-spin" />
+          <p className="text-slate-400 text-sm">Cargando pedido...</p>
+        </div>
       </div>
     )
   }
 
   if (error || !pedido) {
     return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error || 'Pedido no encontrado'}</p>
-          <button onClick={() => router.push('/mesas')} className="text-slate-600 underline text-sm">
-            Volver a mesas
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center bg-white rounded-2xl border border-slate-200 shadow-sm px-8 py-10 max-w-sm w-full mx-4">
+          <div className="text-4xl mb-3">⚠️</div>
+          <p className="text-slate-700 font-medium mb-1">{error || 'Pedido no encontrado'}</p>
+          <p className="text-slate-400 text-sm mb-5">No se pudo cargar la información.</p>
+          <button
+            onClick={() => router.push('/mesas')}
+            className="text-sm font-medium text-slate-700 hover:text-slate-900 px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors"
+          >
+            ← Volver a mesas
           </button>
         </div>
       </div>
@@ -154,37 +162,36 @@ export default function DetallePedidoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center gap-4 sticky top-0 z-10 shadow-sm">
+    <div className="min-h-screen bg-slate-50">
+      <header className="bg-white border-b border-slate-200 px-5 py-3.5 flex items-center gap-4 sticky top-0 z-10 shadow-sm">
         <a
           href="/mesas"
-          className="text-slate-400 hover:text-slate-700 text-sm font-medium transition-colors shrink-0"
+          className="text-slate-400 hover:text-slate-700 text-sm font-medium transition-colors shrink-0 flex items-center gap-1"
         >
-          ← Volver
+          ← Mesas
         </a>
         <div className="flex-1 min-w-0">
-          <h1 className="text-base font-bold text-slate-900 truncate">
+          <h1 className="text-sm font-bold text-slate-900 truncate">
             Mesa {pedido.mesa.numero}
-            <span className="font-normal text-slate-500"> · {pedido.comensales} persona{pedido.comensales !== 1 ? 's' : ''}</span>
+            <span className="font-normal text-slate-400"> · {pedido.comensales} persona{pedido.comensales !== 1 ? 's' : ''}</span>
           </h1>
         </div>
         {tiempo && (
-          <span className="text-xs text-slate-400 shrink-0">
-            Abierto hace <span className="font-mono font-semibold text-slate-600">{tiempo}</span>
+          <span className="text-xs text-slate-400 shrink-0 flex items-center gap-1">
+            ⏱ <span className="font-mono font-semibold text-slate-600">{tiempo}</span>
           </span>
         )}
         {pedido.estado === 'abierto' && pedido.items.length === 0 && (
           <button
             onClick={handleCancelar}
             disabled={cancelando}
-            className="text-xs text-red-500 hover:text-red-700 font-medium shrink-0 disabled:opacity-50"
+            className="text-xs text-red-500 hover:text-red-700 font-medium shrink-0 disabled:opacity-50 px-2.5 py-1 rounded-lg hover:bg-red-50 transition-colors"
           >
             {cancelando ? 'Cancelando…' : 'Cancelar mesa'}
           </button>
         )}
       </header>
 
-      {/* Tabs para móvil */}
       <div className="lg:hidden flex border-b border-slate-200 bg-white">
         <button
           onClick={() => setTabMovil('pedido')}
@@ -194,7 +201,7 @@ export default function DetallePedidoPage() {
               : 'text-slate-400 hover:text-slate-600'
           }`}
         >
-          Pedido
+          Pedido {pedido.items.length > 0 && <span className="ml-1 text-xs bg-slate-200 text-slate-700 rounded-full px-1.5 py-0.5">{pedido.items.length}</span>}
         </button>
         <button
           onClick={() => setTabMovil('carta')}

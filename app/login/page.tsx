@@ -37,15 +37,17 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-100">
+    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-white to-slate-100">
       <div className="w-full max-w-sm px-4">
         <div className="text-center mb-8">
-          <span className="text-5xl">🍽</span>
-          <h1 className="mt-3 text-2xl font-bold text-slate-900 tracking-tight">Restaurante</h1>
-          <p className="mt-1 text-sm text-slate-500">Ingresa con tu cuenta</p>
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-100 text-3xl mb-4 shadow-sm ring-1 ring-amber-200">
+            🍽
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Restaurante</h1>
+          <p className="mt-1 text-sm text-slate-500">Sistema de gestión de pedidos</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-md border border-slate-200/60 p-8 space-y-5">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
             <input
@@ -54,7 +56,7 @@ export default function LoginPage() {
               onChange={e => setEmail(e.target.value)}
               placeholder="email@ejemplo.com"
               required
-              className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition"
+              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 bg-slate-50/60 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400 transition"
             />
           </div>
 
@@ -67,7 +69,7 @@ export default function LoginPage() {
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full border border-slate-300 rounded-xl px-4 py-2.5 pr-11 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition"
+                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 pr-11 text-sm text-slate-900 placeholder-slate-400 bg-slate-50/60 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400 transition"
               />
               <button
                 type="button"
@@ -81,7 +83,8 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-2">
+              <span className="text-red-400 shrink-0 mt-px">⚠</span>
               <p className="text-red-700 text-sm">{error}</p>
             </div>
           )}
@@ -89,9 +92,14 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-slate-900 text-white py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 hover:bg-slate-700 active:scale-95 transition-all"
+            className="w-full bg-slate-900 text-white py-3 rounded-xl text-sm font-semibold disabled:opacity-50 hover:bg-slate-800 active:scale-[0.98] transition-all shadow-sm"
           >
-            {loading ? 'Ingresando...' : 'Ingresar'}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Ingresando...
+              </span>
+            ) : 'Ingresar'}
           </button>
         </form>
       </div>
