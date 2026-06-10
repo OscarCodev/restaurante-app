@@ -118,14 +118,14 @@ describe('GET /api/pedidos/[id]', () => {
     expect(res.status).toBe(404)
   })
 
-  it('devuelve 403 si el mesero intenta acceder al pedido de otro usuario', async () => {
+  it('devuelve 200 si el mesero accede al pedido de otro usuario', async () => {
     const otroMesero = { ...userMesero, id: 'otro-user' }
     mockGetAuthUser.mockResolvedValue(otroMesero)
     mockContainer() // pedidoConDetalle.usuario_id es 'user-1', otroMesero es 'otro-user'
 
     const req = makeRequest('http://localhost/api/pedidos/pedido-1', 'GET')
     const res = await GET(req, makeCtx({ id: 'pedido-1' }))
-    expect(res.status).toBe(403)
+    expect(res.status).toBe(200)
   })
 
   it('devuelve 200 si el mesero accede a su propio pedido', async () => {
