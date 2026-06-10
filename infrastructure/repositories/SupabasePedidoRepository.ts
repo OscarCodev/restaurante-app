@@ -1,4 +1,5 @@
 import { createClient } from '@/infrastructure/supabase/server'
+import { createAdminClient } from '@/infrastructure/supabase/admin'
 import { ConflictError } from '@/domain/errors/DomainErrors'
 import type { IPedidoRepository } from '@/domain/repositories/IPedidoRepository'
 import type {
@@ -30,7 +31,7 @@ export class SupabasePedidoRepository implements IPedidoRepository {
   }
 
   async findAllAbiertos(): Promise<Pedido[]> {
-    const supabase = await createClient()
+    const supabase = await createAdminClient()
     const { data, error } = await supabase
       .from('pedidos')
       .select('*')
@@ -71,7 +72,7 @@ export class SupabasePedidoRepository implements IPedidoRepository {
   }
 
   async findConDetalle(id: string): Promise<PedidoConDetalle | null> {
-    const supabase = await createClient()
+    const supabase = await createAdminClient()
     const { data, error } = await supabase
       .from('pedidos')
       .select(`

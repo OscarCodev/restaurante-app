@@ -1,9 +1,10 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Producto } from '@/domain/entities/Producto'
 import ProductoForm from '@/components/admin/ProductoForm'
 import Drawer from '@/components/ui/Drawer'
 import Badge from '@/components/ui/Badge'
+import { createClient } from '@/infrastructure/supabase/client'
 
 const CATEGORIA_VARIANTE: Record<string, 'yellow' | 'blue' | 'cyan' | 'pink'> = {
   entrada:   'yellow',
@@ -16,6 +17,8 @@ export default function AdminProductosPage() {
   const [productos, setProductos] = useState<Producto[]>([])
   const [editando, setEditando] = useState<Producto | null | 'nuevo'>(null)
   const [loading, setLoading] = useState(true)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const canalRef = useRef<any>(null)
 
   async function cargar() {
     setLoading(true)
@@ -24,7 +27,18 @@ export default function AdminProductosPage() {
     setLoading(false)
   }
 
-  useEffect(() => { cargar() }, [])
+  useEffect(() => {
+    cargar()
+    const supabase = createClient()
+    const canal = supabase.channel('productos-cambios')
+    canal.subscribe()
+    canalRef.current = canal
+    return () => { supabase.removeChannel(canal) }
+  }, [])
+
+  function notificarCambio() {
+    canalRef.current?.send({ type: 'broadcast', event: 'cambio', payload: {} })
+  }
 
   async function toggleActivo(producto: Producto) {
     await fetch(`/api/productos/${producto.id}`, {
@@ -35,6 +49,7 @@ export default function AdminProductosPage() {
     setProductos(prev => prev.map(p =>
       p.id === producto.id ? { ...p, activo: !p.activo } : p
     ))
+    notificarCambio()
   }
 
   return (
@@ -112,7 +127,7 @@ export default function AdminProductosPage() {
         {editando && (
           <ProductoForm
             producto={editando === 'nuevo' ? undefined : editando}
-            onSuccess={() => { setEditando(null); cargar() }}
+            onSuccess={() => { setEditando(null); cargar(); notificarCambio() }}
             onCancel={() => setEditando(null)}
           />
         )}

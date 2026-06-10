@@ -12,10 +12,6 @@ export async function GET(_req: NextRequest, ctx: RouteContext<'/api/pedidos/[id
     const pedido = await createContainer().getPedidoConDetalle.execute(id)
     if (!pedido) return NextResponse.json({ error: 'Pedido no encontrado', code: 'NOT_FOUND' }, { status: 404 })
 
-    if (user.rol !== 'admin' && pedido.usuario_id !== user.id) {
-      return NextResponse.json({ error: 'Sin permisos', code: 'FORBIDDEN' }, { status: 403 })
-    }
-
     return NextResponse.json(pedido)
   } catch (err) {
     return mapDomainError(err)

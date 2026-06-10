@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import type { Producto } from '@/domain/entities/Producto'
 import type { Categoria } from '@/domain/entities/Producto'
+import { createClient } from '@/infrastructure/supabase/client'
 
 const CATEGORIAS: { value: Categoria | 'todos'; label: string; emoji: string }[] = [
   { value: 'todos',     label: 'Todos',      emoji: '🍽' },
@@ -30,6 +31,33 @@ export default function AgregarItemForm({ pedidoId, cerrado, onItemAdded }: Agre
       .then(r => r.json())
       .then(setProductos)
       .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    const supabase = createClient()
+
+    async function suscribir() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      supabase.realtime.setAuth(session.access_token)
+
+      const channel = supabase
+        .channel('productos-cambios')
+        .on('broadcast', { event: 'cambio' }, () => {
+          fetch('/api/productos').then(r => r.json()).then(setProductos)
+        })
+        .subscribe()
+
+      return channel
+    }
+
+    const channelPromise = suscribir()
+    return () => {
+      channelPromise.then(channel => {
+        if (channel) supabase.removeChannel(channel)
+      })
+    }
   }, [])
 
   const filtrados = categoria === 'todos'

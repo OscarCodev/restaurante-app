@@ -1,50 +1,23 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/infrastructure/supabase/client'
 import { MesaCard, type MesaConPedido } from './MesaCard'
 import AbrirPedidoModal from './AbrirPedidoModal'
-import type { Mesa } from '@/domain/entities/Mesa'
 
 interface MesaGridProps {
   initialMesas: MesaConPedido[]
 }
 
 export default function MesaGrid({ initialMesas }: MesaGridProps) {
-  const router = useRouter()
   const [mesas, setMesas] = useState<MesaConPedido[]>(initialMesas)
   const [mesaSeleccionada, setMesaSeleccionada] = useState<MesaConPedido | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
 
-    async function aplicarCambioMesa(mesaActualizada: Mesa) {
-      if (mesaActualizada.estado === 'ocupada') {
-        const { data: pedido } = await supabase
-          .from('pedidos')
-          .select('id, fecha_apertura')
-          .eq('mesa_id', mesaActualizada.id)
-          .eq('estado', 'abierto')
-          .order('fecha_apertura', { ascending: false })
-          .maybeSingle()
-
-        setMesas(prev => prev.map(m =>
-          m.id === mesaActualizada.id
-            ? {
-                ...m,
-                ...mesaActualizada,
-                pedido_activo_id: pedido?.id ?? null,
-                fecha_apertura_pedido: pedido?.fecha_apertura ?? null,
-              }
-            : m
-        ))
-      } else {
-        setMesas(prev => prev.map(m =>
-          m.id === mesaActualizada.id
-            ? { ...m, ...mesaActualizada, pedido_activo_id: null, fecha_apertura_pedido: null }
-            : m
-        ))
-      }
+    async function recargarMesas() {
+      const res = await fetch('/api/mesas')
+      if (res.ok) setMesas(await res.json())
     }
 
     async function iniciarRealtime() {
@@ -59,8 +32,8 @@ export default function MesaGrid({ initialMesas }: MesaGridProps) {
         .channel(`mesas-realtime-${session.user.id}`)
         .on(
           'postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'mesas' },
-          (payload) => { aplicarCambioMesa(payload.new as Mesa) }
+          { event: '*', schema: 'public', table: 'mesas' },
+          recargarMesas
         )
         .subscribe()
 
